@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Risk Register{% endblock %}
+{% block breadcrumb %}Workspace <span>/</span> Risk register{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">RISK MANAGEMENT</div><h1>Risk register</h1><p class="page-subtitle">Identify, score, and track risks to critical assets.</p></div><span class="count-pill">{{ risks|length }} risks tracked</span></div>
+<div class="content-grid form-layout">
+  <section class="panel form-panel"><div class="panel-header"><div><h2>Register a risk</h2><p>Rate likelihood and business impact from 1 to 5.</p></div><span class="form-icon">◇</span></div>
+  <form method="post" class="stack-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Risk title <input name="title" required maxlength="180" placeholder="e.g. Unpatched critical server"></label>
+    <label>Affected asset <input name="asset" required maxlength="180" placeholder="e.g. Customer database"></label>
+    <div class="two-fields"><label>Likelihood <select name="likelihood">{% for n in range(1,6) %}<option value="{{ n }}" {% if n==3 %}selected{% endif %}>{{ n }} — {{ ['Rare','Unlikely','Possible','Likely','Almost certain'][n-1] }}</option>{% endfor %}</select></label><label>Impact <select name="impact">{% for n in range(1,6) %}<option value="{{ n }}" {% if n==3 %}selected{% endif %}>{{ n }} — {{ ['Negligible','Minor','Moderate','Major','Severe'][n-1] }}</option>{% endfor %}</select></label></div>
+    <label>Risk description <textarea name="description" rows="3" placeholder="Describe the threat scenario and potential consequence."></textarea></label>
+    <label>Mitigation plan <textarea name="mitigation" rows="3" placeholder="What controls or actions could reduce the risk?"></textarea></label>
+    <label>Owner <input name="owner" maxlength="120" placeholder="Team or responsible person"></label>
+    <button class="button button-primary button-full" type="submit">＋ Add to risk register</button>
+  </form>
+  </section>
+  <section class="panel panel-wide"><div class="panel-header"><div><h2>Tracked risks</h2><p>Risk score = likelihood × impact</p></div><span class="tiny-label">1–25 SCALE</span></div>
+  {% if risks %}<div class="table-wrap"><table><thead><tr><th>Risk / asset</th><th>Score</th><th>Level</th><th>Owner</th><th>Status</th></tr></thead><tbody>
+  {% for risk in risks %}<tr><td><strong>{{ risk.title }}</strong><small class="cell-sub">{{ risk.asset }}</small>{% if risk.description %}<small class="cell-sub">{{ risk.description }}</small>{% endif %}</td><td><span class="score-chip">{{ risk.score }}/25</span></td><td><span class="badge badge-{{ risk.level|lower }}">{{ risk.level }}</span></td><td>{{ risk.owner }}</td><td><form class="inline-form" method="post" action="{{ url_for('update_risk_status', risk_id=risk.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status" aria-label="Risk status" onchange="this.form.submit()">{% for status in ['Open','Mitigating','Accepted','Closed'] %}<option value="{{ status }}" {% if risk.status==status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></form></td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<div class="empty-state">No risks yet. Use the form to add the first one.</div>{% endif %}
+  <div class="risk-scale"><span><i class="scale-low"></i>Low 1–5</span><span><i class="scale-medium"></i>Medium 6–11</span><span><i class="scale-high"></i>High 12–19</span><span><i class="scale-critical"></i>Critical 20–25</span></div>
+  </section>
+</div>
+{% endblock %}

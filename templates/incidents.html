@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Incident Management{% endblock %}
+{% block breadcrumb %}Workspace <span>/</span> Incidents{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">INCIDENT RESPONSE</div><h1>Incident management</h1><p class="page-subtitle">Record events, assign ownership, and follow response through resolution.</p></div><span class="count-pill">{{ incidents|length }} incidents recorded</span></div>
+<div class="content-grid form-layout">
+  <section class="panel form-panel"><div class="panel-header"><div><h2>Log an incident</h2><p>Capture the initial facts and assign an owner.</p></div><span class="form-icon red-icon">◎</span></div>
+  <form method="post" class="stack-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Incident title <input name="title" required maxlength="180" placeholder="e.g. Suspicious login activity"></label>
+    <div class="two-fields"><label>Category <select name="category">{% for item in ['Security','Availability','Data','Network','Other'] %}<option>{{ item }}</option>{% endfor %}</select></label><label>Severity <select name="severity">{% for item in ['Low','Medium','High','Critical'] %}<option {% if item=='Medium' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label></div>
+    <label>Description <textarea name="description" rows="4" placeholder="What happened, when was it detected, and what may be affected?"></textarea></label>
+    <label>Assigned to <input name="assigned_to" maxlength="120" placeholder="e.g. IT Operations"></label>
+    <button class="button button-primary button-full" type="submit">＋ Record incident</button>
+  </form>
+  </section>
+  <section class="panel panel-wide"><div class="panel-header"><div><h2>Incident queue</h2><p>Update the status as the response progresses.</p></div><span class="tiny-label">RESPONSE TRACKING</span></div>
+  {% if incidents %}<div class="incident-list">{% for incident in incidents %}
+    <article class="incident-card"><div class="incident-main"><div class="incident-id">INC-{{ '%04d'|format(incident.id) }} <span>· {{ incident.created_at.strftime('%d %b %Y, %H:%M') }}</span></div><h3>{{ incident.title }}</h3><p>{{ incident.description or 'No description supplied.' }}</p><div class="incident-meta"><span>{{ incident.category }}</span><span>Owner: {{ incident.assigned_to }}</span></div></div><div class="incident-side"><span class="badge badge-{{ incident.severity|lower }}">{{ incident.severity }}</span><form method="post" action="{{ url_for('update_incident_status', incident_id=incident.id) }}" class="status-update"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label for="status-{{ incident.id }}">Status</label><select id="status-{{ incident.id }}" name="status" onchange="this.form.submit()">{% for status in ['Open','Investigating','Contained','Resolved'] %}<option value="{{ status }}" {% if incident.status==status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></form>{% if incident.resolved_at %}<small class="resolved-date">Resolved {{ incident.resolved_at.strftime('%d %b %Y') }}</small>{% endif %}</div></article>
+  {% endfor %}</div>{% else %}<div class="empty-state">No incidents yet. Log an incident to start tracking response.</div>{% endif %}
+  </section>
+</div>
+{% endblock %}

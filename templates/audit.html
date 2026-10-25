@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block breadcrumb %}Workspace <span>/</span> Audit log{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">ACCOUNTABILITY &amp; TRACEABILITY</div><h1>Audit log</h1><p class="page-subtitle">A chronological record of important actions performed in this workspace.</p></div><span class="count-pill">{{ events|length }} recent events</span></div>
+<section class="panel"><div class="panel-header"><div><h2>Recorded activity</h2><p>Latest 100 application events, newest first.</p></div><span class="tiny-label">EVENT HISTORY</span></div>
+{% if events %}<div class="table-wrap"><table><thead><tr><th>Event</th><th>Details</th><th>Timestamp</th></tr></thead><tbody>{% for event in events %}<tr><td><span class="audit-event-icon">≡</span><strong>{{ event.action.replace('_',' ')|title }}</strong></td><td>{{ event.details or '—' }}</td><td class="nowrap">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state">No audit events have been recorded yet. Add a risk or incident, or run a recovery test.</div>{% endif %}
+</section>
+<div class="notice notice-muted"><span class="notice-icon">ⓘ</span><div><strong>Audit log scope</strong><p>This is a lightweight educational application log stored in the app database. It is not tamper-proof and should not be treated as a compliance-grade audit trail.</p></div></div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Recovery Lab{% endblock %}
+{% block breadcrumb %}Workspace <span>/</span> Recovery lab{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">BUSINESS CONTINUITY</div><h1>Recovery lab</h1><p class="page-subtitle">Practice backup validation and recovery using an isolated synthetic service.</p></div><span class="lab-pill"><span class="tiny-dot"></span> SANDBOXED ENVIRONMENT</span></div>
+<div class="notice"><span class="notice-icon">ⓘ</span><div><strong>Safe simulation environment</strong><p>Outage simulation clears only the sample records in this project's local test database. It does not affect your computer's real files or any external service.</p></div></div>
+<div class="metric-grid recovery-metrics">
+  <div class="metric-card"><div class="metric-top"><span>Test service status</span><span class="metric-icon {% if status=='Operational' %}green{% else %}red{% endif %}">⌁</span></div><div class="metric-value status-value">{{ status }}</div><div class="metric-foot"><span class="metric-caption">Synthetic SQLite service</span><span class="status-indicator {% if status=='Operational' %}good{% else %}bad{% endif %}"></span></div></div>
+  <div class="metric-card"><div class="metric-top"><span>Sample records</span><span class="metric-icon purple">▤</span></div><div class="metric-value">{{ record_count }}</div><div class="metric-foot"><span class="metric-caption">Records currently available</span></div></div>
+  <div class="metric-card"><div class="metric-top"><span>Verified backups</span><span class="metric-icon green">✓</span></div><div class="metric-value">{{ backups|selectattr('verified')|list|length }}</div><div class="metric-foot"><span class="metric-caption">Integrity check passed</span></div></div>
+  <div class="metric-card"><div class="metric-top"><span>Recovery actions</span><span class="metric-icon amber">↻</span></div><div class="metric-value">{{ history|length }}</div><div class="metric-foot"><span class="metric-caption">Latest 15 history entries</span></div></div>
+</div>
+<div class="content-grid">
+  <section class="panel panel-wide"><div class="panel-header"><div><h2>Recovery workflow</h2><p>Follow the sequence to demonstrate recoverability.</p></div><span class="tiny-label">3-STEP EXERCISE</span></div>
+    <div class="recovery-steps">
+      <div class="recovery-step"><div class="step-number">01</div><div class="step-copy"><h3>Create a verified backup</h3><p>Copy the synthetic service database and verify its SQLite integrity and SHA-256 checksum.</p><span class="step-tag">BACKUP + INTEGRITY CHECK</span></div><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="backup"><button class="button button-primary" type="submit">Create backup ↗</button></form></div>
+      <div class="step-divider"></div>
+      <div class="recovery-step"><div class="step-number">02</div><div class="step-copy"><h3>Simulate a service outage</h3><p>Mark the synthetic service unavailable and clear only its sample rows to test the restore process.</p><span class="step-tag warning-tag">DESTRUCTIVE TO SYNTHETIC DATA ONLY</span></div><form method="post" onsubmit="return confirm('Simulate an outage in the synthetic test database? Create a backup first.');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="simulate_outage"><button class="button button-danger" type="submit" {% if status=='Outage' or not latest_backup %}disabled{% endif %}>Simulate outage ↗</button></form></div>
+      <div class="step-divider"></div>
+      <div class="recovery-step"><div class="step-number">03</div><div class="step-copy"><h3>Restore from the latest backup</h3><p>Restore the verified backup, validate database integrity, and record estimated RTO/RPO values.</p><span class="step-tag success-tag">RESTORE + VALIDATION</span></div><form method="post" onsubmit="return confirm('Restore the synthetic service from its latest verified backup?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="recover"><button class="button button-dark" type="submit" {% if status!='Outage' or not latest_backup %}disabled{% endif %}>Restore service ↗</button></form></div>
+    </div>
+  </section>
+  <section class="panel panel-side"><div class="panel-header"><div><h2>Recovery concepts</h2><p>What this exercise demonstrates</p></div></div>
+    <div class="concept-item"><span class="concept-icon purple">⛨</span><div><strong>Integrity verification</strong><p>SQLite integrity check and SHA-256 file checksum.</p></div></div>
+    <div class="concept-item"><span class="concept-icon green">◷</span><div><strong>RTO — Recovery Time Objective</strong><p>Elapsed time from simulated outage to successful restore.</p></div></div>
+    <div class="concept-item"><span class="concept-icon amber">◴</span><div><strong>RPO — Recovery Point Objective</strong><p>Approximate age of the latest sample data at outage start.</p></div></div>
+    <div class="concept-item"><span class="concept-icon red">≡</span><div><strong>Auditability</strong><p>Important operations are recorded in the audit log.</p></div></div>
+  </section>
+  <section class="panel panel-wide"><div class="panel-header"><div><h2>Backup inventory</h2><p>Available local backup files and verification results.</p></div><span class="tiny-label">{{ backups|length }} FILES</span></div>
+  {% if backups %}<div class="table-wrap"><table><thead><tr><th>Backup file</th><th>Size</th><th>SHA-256 checksum</th><th>Integrity</th><th>Created</th></tr></thead><tbody>{% for backup in backups %}<tr><td><strong>{{ backup.name }}</strong></td><td>{{ backup.size }} KB</td><td><code class="checksum">{{ backup.checksum[:18] }}…</code></td><td><span class="badge {% if backup.verified %}badge-low{% else %}badge-critical{% endif %}">{{ 'Verified' if backup.verified else 'Failed' }}</span></td><td>{{ backup.created }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state">No backups yet. Create your first verified backup above.</div>{% endif %}
+  </section>
+  <section class="panel panel-wide"><div class="panel-header"><div><h2>Recovery history</h2><p>Most recent backup and recovery operations.</p></div><a class="subtle-link" href="{{ url_for('audit_page') }}">Audit log →</a></div>
+  {% if history %}<div class="table-wrap"><table><thead><tr><th>Action</th><th>Result</th><th>Details</th><th>RTO</th><th>Time</th></tr></thead><tbody>{% for item in history %}<tr><td><strong>{{ item.action }}</strong><small class="cell-sub">{{ item.backup_name or '—' }}</small></td><td><span class="badge {% if item.result in ['Success','Simulated'] %}badge-low{% else %}badge-critical{% endif %}">{{ item.result }}</span></td><td>{{ item.details or '—' }}</td><td>{{ ('%.2f s'|format(item.rto_seconds)) if item.rto_seconds is not none else '—' }}</td><td>{{ item.created_at.strftime('%d %b %H:%M:%S') }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state">No recovery actions recorded yet.</div>{% endif %}
+  </section>
+</div>
+{% endblock %}

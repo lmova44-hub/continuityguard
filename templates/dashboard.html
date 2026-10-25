@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block breadcrumb %}Workspace <span>/</span> Overview{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><div class="eyebrow">CONTROL CENTER</div><h1>Operational overview</h1><p class="page-subtitle">Monitor risk exposure, track incidents, and validate recovery readiness.</p></div>
+  <div class="heading-actions"><a class="button button-secondary" href="{{ url_for('audit_page') }}">View audit log <span>↗</span></a><a class="button button-primary" href="{{ url_for('incidents_page') }}">＋ Log incident</a></div>
+</div>
+<div class="welcome-strip"><div class="welcome-symbol">✳</div><div><strong>Resilience starts with visibility.</strong><p>Your workspace brings risk, incident response, and recovery checks into one place.</p></div><a href="{{ url_for('recovery_page') }}">Open Recovery Lab <span>→</span></a></div>
+<div class="metric-grid">
+  <div class="metric-card"><div class="metric-top"><span>Total risks</span><span class="metric-icon purple">◇</span></div><div class="metric-value">{{ risk_count }}</div><div class="metric-foot"><span class="metric-caption">Registered risk items</span><a href="{{ url_for('risks_page') }}">View register →</a></div></div>
+  <div class="metric-card"><div class="metric-top"><span>High / critical risks</span><span class="metric-icon amber">△</span></div><div class="metric-value">{{ high_risks }}</div><div class="metric-foot"><span class="metric-caption">Need active attention</span><a href="{{ url_for('risks_page') }}">Review →</a></div></div>
+  <div class="metric-card"><div class="metric-top"><span>Open incidents</span><span class="metric-icon red">◎</span></div><div class="metric-value">{{ open_incidents }}</div><div class="metric-foot"><span class="metric-caption">Not yet resolved</span><a href="{{ url_for('incidents_page') }}">Track incidents →</a></div></div>
+  <div class="metric-card"><div class="metric-top"><span>Recovery tests</span><span class="metric-icon green">↻</span></div><div class="metric-value">{{ recovery_count }}</div><div class="metric-foot"><span class="metric-caption">Recorded lab actions</span><a href="{{ url_for('recovery_page') }}">Run a test →</a></div></div>
+</div>
+<div class="content-grid">
+  <section class="panel panel-wide">
+    <div class="panel-header"><div><h2>Risk exposure</h2><p>Latest entries in the risk register</p></div><a class="subtle-link" href="{{ url_for('risks_page') }}">All risks <span>→</span></a></div>
+    {% if risks %}
+    <div class="table-wrap"><table><thead><tr><th>Risk</th><th>Asset</th><th>Score</th><th>Level</th><th>Status</th></tr></thead><tbody>
+    {% for risk in risks %}<tr><td><strong>{{ risk.title }}</strong><small class="cell-sub">#RSK-{{ '%04d'|format(risk.id) }}</small></td><td>{{ risk.asset }}</td><td><span class="score-chip">{{ risk.score }}/25</span></td><td><span class="badge badge-{{ risk.level|lower }}">{{ risk.level }}</span></td><td><span class="status-text">{{ risk.status }}</span></td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No risks recorded yet.</div>{% endif %}
+  </section>
+  <section class="panel panel-side">
+    <div class="panel-header"><div><h2>Service health</h2><p>Synthetic recovery service</p></div><span class="health-symbol">⌁</span></div>
+    <div class="service-health"><span class="health-ring {% if service_status() == 'Operational' %}ring-good{% else %}ring-bad{% endif %}"><span>⌁</span></span><div><strong>{{ service_status() }}</strong><small>Recovery Lab test service</small></div></div>
+    <div class="health-line"><span>Sample records</span><strong>{{ record_count if record_count is defined else 'See Recovery Lab' }}</strong></div>
+    <div class="health-line"><span>Backup verification</span><strong>SHA-256</strong></div>
+    <a class="button button-dark button-full" href="{{ url_for('recovery_page') }}">Manage recovery <span>→</span></a>
+    <p class="panel-note">The Recovery Lab uses synthetic local data only. No real production service is affected.</p>
+  </section>
+  <section class="panel panel-wide">
+    <div class="panel-header"><div><h2>Recent incidents</h2><p>Latest incident response activity</p></div><a class="subtle-link" href="{{ url_for('incidents_page') }}">All incidents <span>→</span></a></div>
+    {% if incidents %}
+    <div class="table-wrap"><table><thead><tr><th>Incident</th><th>Category</th><th>Severity</th><th>Status</th><th>Reported</th></tr></thead><tbody>
+    {% for incident in incidents %}<tr><td><strong>{{ incident.title }}</strong><small class="cell-sub">#INC-{{ '%04d'|format(incident.id) }}</small></td><td>{{ incident.category }}</td><td><span class="badge badge-{{ incident.severity|lower }}">{{ incident.severity }}</span></td><td><span class="badge badge-status-{{ incident.status|lower }}">{{ incident.status }}</span></td><td>{{ incident.created_at.strftime('%d %b %Y') }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No incidents recorded yet.</div>{% endif %}
+  </section>
+  <section class="panel panel-side">
+    <div class="panel-header"><div><h2>Audit activity</h2><p>Recent recorded actions</p></div><a class="subtle-link" href="{{ url_for('audit_page') }}">View all →</a></div>
+    {% if recent_audit %}<div class="activity-list">{% for event in recent_audit %}<div class="activity-item"><span class="activity-dot"></span><div><strong>{{ event.action.replace('_',' ')|title }}</strong><p>{{ event.details }}</p><small>{{ event.created_at.strftime('%d %b · %H:%M') }}</small></div></div>{% endfor %}</div>{% else %}<div class="empty-state">Actions will appear here as you use the workspace.</div>{% endif %}
+  </section>
+</div>
+{% endblock %}
